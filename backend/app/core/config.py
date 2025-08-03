@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     DB_PORT: int = 5432
     DB_USER: str = "postgres"
     DB_PASSWORD: str = "ABC123"
-    DB_NAME: str = "evaluacion_docente"
+    DB_NAME: str = "evaluacion_eduardoaguirrepequeno"
     
     # JWT
     SECRET_KEY: str = "tu_clave_super_secreta_aqui_cambiar_en_produccion"

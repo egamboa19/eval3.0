@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Boolean, DateTime, Integer, ForeignKey, Text
+from sqlalchemy import Column, String, Boolean, DateTime, Integer, ForeignKey, Text, DECIMAL
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -139,3 +139,93 @@ class User(Base):
 
     def __repr__(self):
         return f"<User(email='{self.email}', role='{self.role.name if self.role else None}')>"
+class Survey(Base):
+    __tablename__ = "surveys"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    title = Column(String(255), nullable=False)
+    description = Column(Text)
+    instructions = Column(Text)
+    is_active = Column(Boolean, default=True)
+    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    # Relaciones
+    questions = relationship("Question", back_populates="survey")
+    assignments = relationship("SurveyAssignment", back_populates="survey")
+    evaluations = relationship("Evaluation", back_populates="survey")
+
+class Question(Base):
+    __tablename__ = "questions"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    survey_id = Column(UUID(as_uuid=True), ForeignKey("surveys.id"))
+    question_text = Column(Text, nullable=False)
+    question_type = Column(String(50), default='scale')
+    order_number = Column(Integer, nullable=False)
+    is_required = Column(Boolean, default=True)
+    min_value = Column(Integer, default=1)
+    max_value = Column(Integer, default=10)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relaciones
+    survey = relationship("Survey", back_populates="questions")
+    answers = relationship("Answer", back_populates="question")
+
+class SurveyAssignment(Base):
+    __tablename__ = "survey_assignments"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    survey_id = Column(UUID(as_uuid=True), ForeignKey("surveys.id"))
+    evaluator_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    evaluatee_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    assignment_type = Column(String(20), nullable=False)
+    status = Column(String(20), default='pending')
+    due_date = Column(DateTime(timezone=True))
+    assigned_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    assigned_at = Column(DateTime(timezone=True), server_default=func.now())
+    started_at = Column(DateTime(timezone=True))
+    completed_at = Column(DateTime(timezone=True))
+
+    # Relaciones
+    survey = relationship("Survey", back_populates="assignments")
+    evaluator = relationship("User", foreign_keys=[evaluator_id], back_populates="assignments_as_evaluator")
+    evaluatee = relationship("User", foreign_keys=[evaluatee_id], back_populates="assignments_as_evaluatee")
+    assigned_by_user = relationship("User", foreign_keys=[assigned_by], back_populates="assignments_created")
+    evaluation = relationship("Evaluation", back_populates="assignment", uselist=False)
+
+class Evaluation(Base):
+    __tablename__ = "evaluations"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    assignment_id = Column(UUID(as_uuid=True), ForeignKey("survey_assignments.id"))
+    evaluator_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    evaluatee_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    survey_id = Column(UUID(as_uuid=True), ForeignKey("surveys.id"))
+    status = Column(String(20), default='in_progress')
+    started_at = Column(DateTime(timezone=True), server_default=func.now())
+    completed_at = Column(DateTime(timezone=True))
+    total_score = Column(DECIMAL(5,2))
+    comments = Column(Text)
+
+    # Relaciones
+    assignment = relationship("SurveyAssignment", back_populates="evaluation")
+    evaluator = relationship("User", foreign_keys=[evaluator_id], back_populates="evaluations_as_evaluator")
+    evaluatee = relationship("User", foreign_keys=[evaluatee_id], back_populates="evaluations_as_evaluatee")
+    survey = relationship("Survey", back_populates="evaluations")
+    answers = relationship("Answer", back_populates="evaluation")
+
+class Answer(Base):
+    __tablename__ = "answers"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    evaluation_id = Column(UUID(as_uuid=True), ForeignKey("evaluations.id"))
+    question_id = Column(UUID(as_uuid=True), ForeignKey("questions.id"))
+    answer_value = Column(Integer)
+    answer_text = Column(Text)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relaciones
+    evaluation = relationship("Evaluation", back_populates="answers")
+    question = relationship("Question", back_populates="answers")

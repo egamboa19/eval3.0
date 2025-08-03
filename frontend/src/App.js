@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import axios from 'axios';
-
+import UsersManagement from './pages/admin/UsersManagement';
+import SurveysManagement from './pages/admin/SurveysManagement';
 // Configurar axios base URL
 axios.defaults.baseURL = 'http://localhost:8000/api/v1';
 
@@ -62,14 +63,14 @@ function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    
+
     if (!email || !password) {
       setError('Por favor completa todos los campos');
       return;
     }
 
     const result = await login(email, password);
-    
+
     if (!result.success) {
       setError(result.error);
     }
@@ -82,7 +83,7 @@ function LoginPage() {
         <div className="text-center">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">🎓 Prepa 25</h1>
           <h2 className="text-xl text-gray-600">Sistema de Evaluación Docente</h2>
-          
+
           {/* Indicador de conexión */}
           <div className="mt-4 flex items-center justify-center space-x-2">
             <div className={`w-2 h-2 rounded-full ${isConnecting ? 'bg-yellow-500' : error ? 'bg-red-500' : 'bg-green-500'}`}></div>
@@ -177,7 +178,7 @@ function Dashboard() {
             axios.get('/users'),
             axios.get('/surveys'),
           ]);
-          
+
           setStats({
             totalUsers: usersResponse.data.length || 0,
             totalSurveys: surveysResponse.data.length || 0,
@@ -218,11 +219,10 @@ function Dashboard() {
                   {user?.first_name} {user?.last_name}
                 </span>
               </div>
-              <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                isAdmin() ? 'bg-purple-100 text-purple-800' :
+              <span className={`px-2 py-1 text-xs font-medium rounded-full ${isAdmin() ? 'bg-purple-100 text-purple-800' :
                 isCoordinator() ? 'bg-blue-100 text-blue-800' :
-                'bg-green-100 text-green-800'
-              }`}>
+                  'bg-green-100 text-green-800'
+                }`}>
                 {user?.role}
               </span>
               <button
@@ -243,7 +243,7 @@ function Dashboard() {
           <h2 className="text-2xl font-bold text-gray-900 mb-4">
             ¡Bienvenido al Sistema de Evaluación Docente! 🎉
           </h2>
-          
+
           <div className="grid gap-6 md:grid-cols-3">
             {/* Información del usuario */}
             <div className="p-4 bg-blue-50 rounded-lg">
@@ -289,23 +289,53 @@ function Dashboard() {
 }
 
 // Dashboards específicos por rol (conectados a BD real)
+// Dashboards específicos por rol (conectados a BD real)
 function AdminDashboard() {
+  const [currentView, setCurrentView] = useState('dashboard'); // ← AGREGAR ESTA LÍNEA
+
+  // Si está en vista de usuarios, mostrar el componente UsersManagement
+  if (currentView === 'users') {
+    return <UsersManagement />;
+  }
+  if (currentView === 'surveys') {
+    return <SurveysManagement />;
+  }
+
+  // Vista normal del dashboard
   return (
     <div className="bg-white rounded-lg shadow p-6">
+      {/* Botón de regreso (opcional, para cuando esté en otras vistas) */}
+      {currentView !== 'dashboard' && (
+        <div className="mb-4">
+          <button
+            onClick={() => setCurrentView('dashboard')}
+            className="text-blue-600 hover:text-blue-800 text-sm"
+          >
+            ← Volver al Dashboard
+          </button>
+        </div>
+      )}
+
       <h3 className="text-lg font-semibold text-gray-900 mb-4">Panel de Administrador</h3>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <div className="p-4 bg-purple-50 rounded-lg border">
           <h4 className="font-medium text-purple-800">Gestión de Usuarios</h4>
           <p className="text-sm text-purple-600 mt-1">Crear, editar y gestionar usuarios</p>
-          <button className="mt-2 text-sm bg-purple-600 text-white px-3 py-1 rounded">
-            Próximamente
+          <button
+            onClick={() => setCurrentView('users')}
+            className="mt-2 text-sm bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700 transition-colors"
+          >
+            Gestionar Usuarios
           </button>
         </div>
         <div className="p-4 bg-blue-50 rounded-lg border">
           <h4 className="font-medium text-blue-800">Encuestas</h4>
           <p className="text-sm text-blue-600 mt-1">Crear y gestionar encuestas</p>
-          <button className="mt-2 text-sm bg-blue-600 text-white px-3 py-1 rounded">
-            Próximamente
+          <button
+            onClick={() => setCurrentView('surveys')}
+            className="mt-2 text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition-colors"
+          >
+            Gestionar Encuestas
           </button>
         </div>
         <div className="p-4 bg-green-50 rounded-lg border">
@@ -335,8 +365,11 @@ function CoordinatorDashboard() {
         <div className="p-4 bg-blue-50 rounded-lg border">
           <h4 className="font-medium text-blue-800">Mi Departamento</h4>
           <p className="text-sm text-blue-600 mt-1">Gestionar maestros de mi área</p>
-          <button className="mt-2 text-sm bg-blue-600 text-white px-3 py-1 rounded">
-            Próximamente
+          <button
+            onClick={() => setCurrentView('surveys')}
+            className="mt-2 text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition-colors"
+          >
+            Gestionar Encuestas
           </button>
         </div>
         <div className="p-4 bg-green-50 rounded-lg border">
